@@ -1,0 +1,133 @@
+# Anonymoux Livecast
+
+A production dashboard for Decart's full Lucy model family, built on the
+official `@decartai/sdk`. Three studios, one console:
+
+- **Realtime** â€” live webcam transformation over WebRTC (edit, virtual
+  try-on, restyle)
+- **Video Studio** â€” async video jobs via the Queue API (edit, try-on,
+  restyle, image-to-video, text-to-video)
+- **Image Studio** â€” synchronous image jobs via the Process API (edit,
+  text-to-image)
+
+## Models wired in
+
+| Studio | Model ID | Decart model | Notes |
+|---|---|---|---|
+| Realtime | `realtime.lucy-2.5` | `lucy-2.5` | General live edit, prompt + optional reference image |
+| Realtime | `realtime.lucy-vton-3` | `lucy-vton-3` | Live garment swap |
+| Realtime | `realtime.lucy-restyle-2` | `lucy-restyle-2` | Live whole-scene restyle |
+| Video Studio | `video.lucy-2.1` | `lucy-2.1` | Async video edit |
+| Video Studio | `video.lucy-vton-3` | `lucy-vton-3` | Async video try-on (+ reference garment) |
+| Video Studio | `video.lucy-restyle-2` | `lucy-restyle-2` | Async video restyle |
+| Video Studio | `video.lucy-pro-i2v` | `lucy-pro-i2v` | Image â†’ video |
+| Video Studio | `video.lucy-pro-t2v` | `lucy-pro-t2v` | Text â†’ video |
+| Image Studio | `image.lucy-image-2` | `lucy-image-2` | Image edit (+ optional reference) |
+| Image Studio | `image.lucy-pro-t2i` | `lucy-pro-t2i` | Text â†’ image |
+
+The full mapping lives in one place â€” `MODEL_REGISTRY` in `server.js` â€” so
+adding, removing, or renaming a model is a single-file change. The frontend
+never hardcodes a Decart model string; it only knows the UI-facing ids
+above, which `GET /health` also echoes back for reference.
+
+## How it works
+
+### Realtime (WebRTC, browser â†” Decart directly)
+
+`server.js` mints a short-lived (5 min) client token via the SDK's
+documented `client.tokens.create()`, scoped to the selected realtime model.
+The browser uses that token to open its own `client.realtime.connect()`
+session straight to Decart's edge network â€” video never touches this
+server for realtime sessions, only the token-mint round trip does.
+
+### Video Studio (async Queue API â€” needs the permanent key)
+
+Queue jobs (video edit/restyle/try-on/i2v/t2v) require the permanent
+`DECART_API_KEY`, so they can't run client-side without exposing it. The
+browser instead uploads to this server as `multipart/form-data`, which:
+
+1. `POST /api/video/submit` â€” forwards the file(s) + prompt to
+   `client.queue.submit()`, returns `{ jobId }`
+2. `GET /api/video/status/:jobId` â€” the browser polls this every 3s via
+   `client.queue.status()`
+3. `GET /api/video/result/:jobId` â€” once `status === "completed"`, the
+   browser fetches this to stream the finished video back, via
+   `client.queue.result()`
+
+Uploads are held in memory only (`multer.memoryStorage()`) and forwarded
+straight through â€” nothing is written to disk on this server.
+
+### Image Studio (sync Process API â€” needs the permanent key)
+
+Same reasoning as Queue: `POST /api/image/process` forwards the upload (or,
+for text-to-image, just the prompt) to `client.process()` and streams the
+resulting image straight back in one response â€” no polling needed.
+
+### Honest telemetry (Realtime tab)
+
+- **Status** â€” from the SDK's documented `connectionChange` event.
+- **Frames Processed** â€” counted client-side from the output `<video>`
+  element using the browser's real `requestVideoFrameCallback` API.
+- **Generation Time** â€” from the SDK's documented `generationTick` event.
+- **Latency** â€” the Decart SDK does not expose a per-frame latency metric,
+  so this is shown as `â€”` rather than a fabricated number.
+
+## Local development
+
+```bash
+npm install
+cp .env.example .env
+# edit .env and set DECART_API_KEY
+npm run dev
+```
+
+Open `http://localhost:10000`.
+
+## Deploying to Render
+
+1. Push this repo to GitHub.
+2. In Render, click **New â†’ Blueprint** and point it at the repo â€” it will
+   pick up `render.yaml` automatically. Alternatively, create a **New â†’ Web
+   Service** manually with:
+   - Build command: `npm install`
+   - Start command: `npm start`
+   - Health check path: `/health`
+3. Set the `DECART_API_KEY` environment variable in the Render dashboard
+   (marked `sync: false` in `render.yaml`, so Render prompts for it rather
+   than committing it to the repo).
+4. Deploy. Your app will be live at `https://<service-name>.onrender.com`.
+
+Render's free tier has a request body/timeout ceiling that's fine for
+image uploads but worth checking against your expected video upload sizes
+if you plan to accept large source clips (Decart's own cap is 300MB for
+video edit/restyle inputs).
+
+## Security notes
+
+- `DECART_API_KEY` is read only from `process.env` server-side and is
+  never sent to the browser â€” only short-lived realtime tokens are, and
+  only for the Realtime tab.
+- Video and image uploads for Video Studio / Image Studio pass through
+  this server (in memory, never persisted to disk) because the Queue and
+  Process APIs require the permanent key. This is unavoidable without
+  giving every visitor your permanent key â€” treat `/api/video/submit` and
+  `/api/image/process` as billable endpoints and consider adding your own
+  auth/rate-limiting in front of them before a public launch, since as
+  shipped they're open to any caller who can reach the server.
+- Client-side validation caps uploads by type and size per model (8MB
+  images, 300MB video). Decart also enforces its own limits server-side.
+- Set `ALLOWED_ORIGINS` in production to restrict which origins can call
+  `POST /token`. Consider a matching allowlist / auth layer for the
+  `/api/*` routes if you deploy this publicly, since those aren't scoped
+  by `ALLOWED_ORIGINS` (that only governs CORS on cross-origin requests,
+  not who can call the server directly).
+
+## Files
+
+| File | Purpose |
+|---|---|
+| `index.html` | Frontend console â€” Realtime / Video Studio / Image Studio tabs, all Decart SDK + fetch integration |
+| `server.js` | Express backend â€” realtime token minting, Queue proxy, Process proxy, model registry |
+| `package.json` | Dependencies and start script |
+| `.env.example` | Environment variable template |
+| `render.yaml` | Render deployment blueprint |
