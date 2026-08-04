@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: anonymoux-livecast
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: DECART_API_KEY
+        sync: false
+      - key: PORT
+        value: 10000
+      - key: ALLOWED_ORIGINS
+        value: ""
