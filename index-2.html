@@ -1,0 +1,2058 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ANONYMOUX LIVECAST — Generative Studio Console</title>
+<meta name="description" content="Realtime and asynchronous AI video/image generation console by ANONYMOUX STUDIO, powered by the full Decart Lucy model family." />
+<link rel="icon" href="https://anonymouxstudio.free.nf/assets/img/logo-64.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700;800&family=Poppins:ital,wght@0,400;0,500;0,600;1,400&family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* ---------- ANONYMOUX STUDIO brand palette (Brand Dictionary §3) ---------- */
+    --matrix-green: #8DFF00;   /* primary accent — CTAs, key highlights only */
+    --glow-green: #63FF00;     /* glow/blur effects only, never flat fills */
+    --cyber-lime: #B6FF2E;     /* hover / secondary highlights */
+    --deep-black: #000000;     /* default canvas */
+    --dark-graphite: #1A1A1A;  /* secondary surface, panels */
+    --metallic-gray: #5C5C5C;  /* borders, dividers, muted text */
+    --soft-white: #F5F5F5;     /* primary text on dark surfaces */
+
+    /* ---------- console tokens, mapped to brand ---------- */
+    --bg-void: var(--deep-black);
+    --bg-panel: rgba(20, 20, 20, 0.66);
+    --bg-panel-raised: rgba(32, 32, 32, 0.82);
+    --hairline: rgba(92, 92, 92, 0.35);
+    --text-primary: var(--soft-white);
+    --text-dim: #9a9a9a;
+    --text-faint: var(--metallic-gray);
+    --tally-red: var(--matrix-green);
+    --tally-red-glow: rgba(141, 255, 0, 0.5);
+    --tally-idle: #333333;
+    --scope-cyan: var(--cyber-lime);
+    --signal-amber: #FFB020;
+    --signal-red: #FF4D4D;
+    --radius-panel: 6px;
+    --radius-control: 4px;
+    font-size: 16px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg-void);
+    color: var(--text-primary);
+    font-family: 'Poppins', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    background-image:
+      linear-gradient(180deg, rgba(0,0,0,0.88), rgba(0,0,0,0.93)),
+      radial-gradient(circle at 15% 0%, rgba(182, 255, 46, 0.05), transparent 45%),
+      radial-gradient(circle at 85% 100%, rgba(141, 255, 0, 0.045), transparent 40%),
+      url('https://anonymouxstudio.free.nf/assets/img/bg-pattern.jpg');
+    background-size: cover, cover, cover, 900px;
+    background-position: center, center, center, center;
+    background-attachment: fixed, fixed, fixed, fixed;
+    background-repeat: no-repeat, no-repeat, no-repeat, repeat;
+    min-height: 100vh;
+  }
+
+  h1, h2, h3, .display {
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 0.05em;
+  }
+
+  .mono { font-family: 'IBM Plex Mono', monospace; }
+  a { color: var(--scope-cyan); }
+
+  :focus-visible {
+    outline: 2px solid var(--scope-cyan);
+    outline-offset: 2px;
+  }
+
+  /* ---------- Top bar ---------- */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--hairline);
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    position: sticky;
+    top: 0;
+    z-index: 30;
+  }
+
+  .brand { display: flex; align-items: center; gap: 12px; }
+
+  .brand .logo-mark {
+    height: 32px;
+    width: 32px;
+    object-fit: contain;
+    filter: drop-shadow(0 0 8px var(--tally-red-glow));
+    flex-shrink: 0;
+  }
+
+  .brand .wordmark { display: flex; flex-direction: column; gap: 2px; line-height: 1; }
+
+  .brand .mark {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+  .brand .mark span { color: var(--matrix-green); }
+
+  .brand .sub {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .topbar-right { display: flex; align-items: center; gap: 10px; }
+
+  .config-chip {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    border: 1px solid var(--hairline);
+    padding: 5px 10px;
+    border-radius: 999px;
+    letter-spacing: 0.04em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .config-chip .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--signal-red);
+    box-shadow: 0 0 6px var(--signal-red);
+  }
+  .config-chip.ok .dot { background: var(--matrix-green); box-shadow: 0 0 6px var(--tally-red-glow); }
+  .config-chip.ok { color: var(--text-primary); }
+
+  /* ---------- Studio tab navigation ---------- */
+  .studio-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 0 24px;
+    border-bottom: 1px solid var(--hairline);
+    background: rgba(0,0,0,0.4);
+    overflow-x: auto;
+    position: sticky;
+    top: 61px;
+    z-index: 25;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  @media (max-width: 640px) { .studio-tabs { top: 57px; } }
+
+  .studio-tab {
+    appearance: none;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-dim);
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 600;
+    font-size: 0.76rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 14px 16px 12px;
+    cursor: pointer;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: color 0.15s ease, border-color 0.15s ease;
+  }
+  .studio-tab .tab-icon { font-size: 0.95rem; }
+  .studio-tab:hover { color: var(--text-primary); }
+  .studio-tab[aria-selected="true"] {
+    color: var(--matrix-green);
+    border-bottom-color: var(--matrix-green);
+  }
+
+  .studio-panel { display: none; }
+  .studio-panel.active { display: block; }
+
+  /* ---------- Layout ---------- */
+  .console {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(320px, 1fr);
+    gap: 20px;
+    padding: 20px 24px 32px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  @media (max-width: 980px) {
+    .console { grid-template-columns: 1fr; padding: 16px; }
+  }
+
+  .panel-intro {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 18px 24px 0;
+  }
+  @media (max-width: 980px) { .panel-intro { padding: 16px 16px 0; } }
+
+  .panel-intro h2 { font-size: 1.05rem; margin: 0 0 4px; color: var(--text-primary); }
+  .panel-intro p {
+    margin: 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.76rem;
+    color: var(--text-dim);
+    max-width: 72ch;
+    line-height: 1.5;
+  }
+
+  /* ---------- Monitor (hero video / output) ---------- */
+  .monitor {
+    background: var(--bg-panel);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-panel);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 0 0 1px rgba(141,255,0,0.04), 0 24px 60px rgba(0,0,0,0.5);
+  }
+
+  .tally-strip {
+    height: 6px;
+    width: 100%;
+    background: var(--tally-idle);
+    transition: background 0.3s ease;
+    flex-shrink: 0;
+  }
+  .tally-strip[data-state="connecting"],
+  .tally-strip[data-state="reconnecting"],
+  .tally-strip[data-state="processing"],
+  .tally-strip[data-state="queued"] {
+    background: var(--signal-amber);
+    animation: pulse-strip 1.1s ease-in-out infinite;
+  }
+  .tally-strip[data-state="connected"],
+  .tally-strip[data-state="generating"],
+  .tally-strip[data-state="completed"] {
+    background: var(--tally-red);
+    box-shadow: 0 0 14px var(--tally-red-glow);
+    animation: pulse-strip 1.6s ease-in-out infinite;
+  }
+  .tally-strip[data-state="error"],
+  .tally-strip[data-state="failed"] {
+    background: var(--signal-red);
+    animation: pulse-strip 0.4s ease-in-out infinite;
+  }
+  @keyframes pulse-strip { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+  @media (prefers-reduced-motion: reduce) { .tally-strip { animation: none !important; } }
+
+  .monitor-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .monitor-head .label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .status-word {
+    font-family: 'Bebas Neue', 'Orbitron', sans-serif;
+    font-size: 1.05rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+  .status-word[data-state="connected"],
+  .status-word[data-state="generating"],
+  .status-word[data-state="completed"] { color: var(--tally-red); }
+  .status-word[data-state="connecting"],
+  .status-word[data-state="reconnecting"],
+  .status-word[data-state="processing"],
+  .status-word[data-state="queued"] { color: var(--signal-amber); }
+  .status-word[data-state="error"],
+  .status-word[data-state="failed"] { color: var(--signal-red); }
+
+  .video-frame, .image-frame {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    background: #05060A;
+    background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px);
+    background-size: 100% 3px;
+  }
+
+  .video-frame video, .image-frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    background: #05060A;
+  }
+
+  .video-frame.cover video { object-fit: cover; }
+
+  .video-frame::after, .image-frame::after {
+    content: 'ANONYMOUX™';
+    position: absolute;
+    bottom: 24px;
+    right: 24px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    color: var(--matrix-green);
+    text-shadow: 0 0 10px var(--glow-green), 0 0 22px rgba(99,255,0,0.5);
+    opacity: 0.85;
+    pointer-events: none;
+    z-index: 4;
+  }
+
+  .placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--text-faint);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    text-align: center;
+    padding: 20px;
+  }
+
+  .loading-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(10, 12, 16, 0.72);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 5;
+  }
+  .loading-overlay.active { display: flex; }
+
+  .spinner {
+    width: 26px;
+    height: 26px;
+    border: 2px solid var(--hairline);
+    border-top-color: var(--scope-cyan);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-overlay .msg {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    letter-spacing: 0.04em;
+  }
+
+  .progress-track {
+    width: 70%;
+    height: 4px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--matrix-green);
+    box-shadow: 0 0 8px var(--tally-red-glow);
+    width: 0%;
+    transition: width 0.4s ease;
+  }
+
+  /* ---------- Telemetry strip ---------- */
+  .telemetry {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    border-top: 1px solid var(--hairline);
+  }
+  .telemetry .cell { padding: 12px 16px; border-left: 1px solid var(--hairline); }
+  .telemetry .cell:first-child { border-left: none; }
+  @media (max-width: 560px) {
+    .telemetry { grid-template-columns: repeat(2, 1fr); }
+    .telemetry .cell:nth-child(3) { border-left: none; }
+  }
+  .telemetry .cell .k {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    display: block;
+    margin-bottom: 4px;
+  }
+  .telemetry .cell .v {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 1.05rem;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  /* ---------- Side rail: modules ---------- */
+  .rail { display: flex; flex-direction: column; gap: 16px; }
+
+  .module {
+    background: var(--bg-panel);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-panel);
+    overflow: hidden;
+    transition: border-color 0.2s ease;
+  }
+  .module:focus-within, .module:hover { border-color: rgba(141, 255, 0, 0.28); }
+
+  .module-head {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .module-head .tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text-faint);
+    letter-spacing: 0.05em;
+  }
+  .module-head .title {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 600;
+    font-size: 0.85rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--text-primary);
+  }
+
+  .module-body {
+    padding: 14px 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  label.field-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  select, textarea, input[type="text"], input[type="number"] {
+    width: 100%;
+    background: var(--bg-panel-raised);
+    border: 1px solid var(--hairline);
+    color: var(--text-primary);
+    border-radius: var(--radius-control);
+    padding: 9px 10px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.88rem;
+  }
+  textarea {
+    resize: vertical;
+    min-height: 76px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.82rem;
+    line-height: 1.4;
+  }
+  select:focus, textarea:focus, input:focus { border-color: var(--scope-cyan); }
+
+  /* Model picker cards */
+  .model-picker { display: flex; flex-direction: column; gap: 8px; }
+  .model-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: var(--bg-panel-raised);
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-control);
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .model-card:hover { border-color: rgba(182,255,46,0.4); }
+  .model-card.selected {
+    border-color: var(--matrix-green);
+    background: rgba(141,255,0,0.06);
+    box-shadow: 0 0 0 1px rgba(141,255,0,0.15);
+  }
+  .model-card input[type="radio"] { margin-top: 3px; accent-color: var(--matrix-green); flex-shrink: 0; }
+  .model-card .meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .model-card .name { font-size: 0.84rem; color: var(--text-primary); font-weight: 500; }
+  .model-card .desc {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--text-dim);
+    line-height: 1.4;
+  }
+  .model-card .badge {
+    display: inline-block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.04em;
+    color: var(--scope-cyan);
+    border: 1px solid rgba(182,255,46,0.35);
+    border-radius: 999px;
+    padding: 1px 6px;
+    margin-top: 4px;
+  }
+
+  .btn {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 600;
+    font-size: 0.82rem;
+    letter-spacing: 0.02em;
+    padding: 10px 14px;
+    border-radius: var(--radius-control);
+    border: 1px solid var(--hairline);
+    background: var(--bg-panel-raised);
+    color: var(--text-primary);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: border-color 0.15s ease, background 0.15s ease, opacity 0.15s ease;
+  }
+  .btn:hover:not(:disabled) { border-color: var(--scope-cyan); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-primary {
+    background: var(--matrix-green);
+    border-color: var(--matrix-green);
+    color: #000;
+    box-shadow: 0 0 18px rgba(141, 255, 0, 0.25);
+  }
+  .btn-primary:hover:not(:disabled) { background: var(--cyber-lime); border-color: var(--cyber-lime); }
+  .btn-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .btn-row .btn { flex: 1 1 auto; }
+  .btn-sm { padding: 6px 10px; font-size: 0.72rem; }
+
+  /* ---------- Dropzone ---------- */
+  .dropzone {
+    border: 1.5px dashed var(--hairline);
+    border-radius: var(--radius-control);
+    padding: 18px 12px;
+    text-align: center;
+    cursor: pointer;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    transition: border-color 0.15s ease, background 0.15s ease;
+    position: relative;
+    display: block;
+  }
+  .dropzone.dragover {
+    border-color: var(--scope-cyan);
+    background: rgba(77, 217, 232, 0.06);
+    color: var(--text-primary);
+  }
+  .dropzone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+  .file-preview {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    background: var(--bg-panel-raised);
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-control);
+    padding: 8px;
+  }
+  .file-preview.active { display: flex; }
+  .file-preview img, .file-preview video {
+    width: 44px; height: 44px; object-fit: cover; border-radius: 4px; flex-shrink: 0;
+  }
+  .file-preview .meta { flex: 1; min-width: 0; }
+  .file-preview .meta .name {
+    font-size: 0.78rem; color: var(--text-primary);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .file-preview .meta .size { font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem; color: var(--text-dim); }
+  .file-preview .clear-btn {
+    background: none; border: none; color: var(--text-dim);
+    cursor: pointer; font-size: 1rem; line-height: 1; padding: 4px 6px;
+  }
+  .file-preview .clear-btn:hover { color: var(--tally-red); }
+
+  .hint {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--text-faint);
+  }
+  .consent-note {
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.7rem;
+    line-height: 1.45;
+    color: var(--text-dim);
+    border-left: 2px solid var(--matrix-green);
+    padding: 6px 0 6px 10px;
+  }
+
+  .field-row { display: flex; gap: 10px; }
+  .field-row > div { flex: 1; min-width: 0; }
+
+  /* ---------- Job queue list (async video) ---------- */
+  .job-list { display: flex; flex-direction: column; gap: 10px; }
+  .job-card {
+    background: var(--bg-panel-raised);
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-control);
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .job-card .job-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .job-card .job-model {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--text-primary);
+  }
+  .job-card .job-status {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--hairline);
+    color: var(--text-dim);
+  }
+  .job-card .job-status[data-state="queued"],
+  .job-card .job-status[data-state="processing"] { color: var(--signal-amber); border-color: rgba(255,176,32,0.4); }
+  .job-card .job-status[data-state="completed"] { color: var(--matrix-green); border-color: rgba(141,255,0,0.4); }
+  .job-card .job-status[data-state="failed"] { color: var(--signal-red); border-color: rgba(255,77,77,0.4); }
+  .job-card .job-prompt {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+  .job-card video { width: 100%; border-radius: 4px; display: block; }
+  .job-card .job-actions { display: flex; gap: 8px; }
+  .job-empty {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.74rem;
+    color: var(--text-faint);
+    text-align: center;
+    padding: 18px 8px;
+  }
+
+  /* ---------- Toasts ---------- */
+  .toast-stack {
+    position: fixed;
+    bottom: 18px;
+    right: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 100;
+    max-width: 320px;
+  }
+  .toast {
+    background: var(--bg-panel-raised);
+    border: 1px solid var(--hairline);
+    border-left: 3px solid var(--scope-cyan);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.76rem;
+    color: var(--text-primary);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    animation: toast-in 0.2s ease;
+  }
+  .toast.error { border-left-color: var(--signal-red); }
+  .toast.success { border-left-color: var(--matrix-green); }
+  .toast.warn { border-left-color: var(--signal-amber); }
+  @keyframes toast-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  footer {
+    text-align: center;
+    padding: 22px 18px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text-faint);
+    border-top: 1px solid var(--hairline);
+    letter-spacing: 0.03em;
+  }
+  footer .accent { color: var(--matrix-green); }
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="brand">
+      <img class="logo-mark" src="https://anonymouxstudio.free.nf/assets/img/logo-64.png" alt="ANONYMOUX STUDIO logo" />
+      <div class="wordmark">
+        <span class="mark">ANONYMOUX <span>LIVECAST</span></span>
+        <span class="sub">Generative Studio Console</span>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <span class="config-chip mono" id="config-chip"><span class="dot"></span><span id="config-chip-text">Checking server…</span></span>
+    </div>
+  </div>
+
+  <nav class="studio-tabs" role="tablist" aria-label="Studio mode">
+    <button class="studio-tab" role="tab" id="tab-btn-realtime" aria-selected="true" aria-controls="panel-realtime">
+      <span class="tab-icon">◉</span> Realtime
+    </button>
+    <button class="studio-tab" role="tab" id="tab-btn-video" aria-selected="false" aria-controls="panel-video">
+      <span class="tab-icon">▤</span> Video Studio
+    </button>
+    <button class="studio-tab" role="tab" id="tab-btn-image" aria-selected="false" aria-controls="panel-image">
+      <span class="tab-icon">▧</span> Image Studio
+    </button>
+  </nav>
+
+  <!-- ================= REALTIME PANEL ================= -->
+  <section class="studio-panel active" id="panel-realtime" role="tabpanel" aria-labelledby="tab-btn-realtime">
+    <div class="panel-intro">
+      <h2>Realtime</h2>
+      <p>Live webcam transformation over WebRTC. Pick a realtime model, connect, and steer the output with prompts and an optional reference image while it streams.</p>
+    </div>
+    <main class="console">
+      <section class="monitor">
+        <div class="tally-strip" id="rt-tally-strip" data-state="idle"></div>
+        <div class="monitor-head">
+          <span class="label"><span>OUTPUT MONITOR</span></span>
+          <span class="status-word mono" id="rt-status-word" data-state="idle">STANDBY</span>
+        </div>
+        <div class="video-frame cover">
+          <video id="rt-output-video" autoplay playsinline muted></video>
+          <video id="rt-local-video" autoplay playsinline muted style="display:none;"></video>
+          <div class="placeholder" id="rt-placeholder">
+            NO SIGNAL<br>Connect a camera and start a session to see the transformed stream here.
+          </div>
+          <div class="loading-overlay" id="rt-loading-overlay">
+            <div class="spinner"></div>
+            <div class="msg" id="rt-loading-msg">CONNECTING…</div>
+          </div>
+        </div>
+        <div class="telemetry">
+          <div class="cell"><span class="k">Status</span><span class="v" id="rt-tel-status">Standby</span></div>
+          <div class="cell"><span class="k">Latency</span><span class="v" id="rt-tel-latency" title="Not exposed by the Decart SDK — shown as unavailable rather than estimated.">—</span></div>
+          <div class="cell"><span class="k">Frames Processed</span><span class="v" id="rt-tel-frames">0</span></div>
+          <div class="cell"><span class="k">Generation Time</span><span class="v" id="rt-tel-gen">0.0s</span></div>
+        </div>
+      </section>
+
+      <section class="rail">
+        <!-- MODEL -->
+        <div class="module">
+          <div class="module-head"><span class="tag mono">MOD.00</span><span class="title">Model</span></div>
+          <div class="module-body">
+            <div class="model-picker" id="rt-model-picker">
+              <label class="model-card selected" data-model="realtime.lucy-2.5">
+                <input type="radio" name="rt-model" value="realtime.lucy-2.5" checked>
+                <span class="meta">
+                  <span class="name">Lucy 2.5 — Realtime Edit</span>
+                  <span class="desc">General-purpose live edits: swap characters, restyle scenes, add/remove objects with prompt + optional reference image.</span>
+                  <span class="badge">2 credits/sec</span>
+                </span>
+              </label>
+              <label class="model-card" data-model="realtime.lucy-vton-3">
+                <input type="radio" name="rt-model" value="realtime.lucy-vton-3">
+                <span class="meta">
+                  <span class="name">Lucy Virtual Try-On 3 — Realtime</span>
+                  <span class="desc">Live garment swap. Provide a clean reference image of the garment; it's applied to the person on camera.</span>
+                </span>
+              </label>
+              <label class="model-card" data-model="realtime.lucy-restyle-2">
+                <input type="radio" name="rt-model" value="realtime.lucy-restyle-2">
+                <span class="meta">
+                  <span class="name">Lucy Restyle 2 — Realtime</span>
+                  <span class="desc">Whole-scene style transfer (e.g. anime, cyberpunk) driven by prompt only.</span>
+                  <span class="badge">1 credit/sec</span>
+                </span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- SOURCE -->
+        <div class="module">
+          <div class="module-head"><span class="tag mono">MOD.01</span><span class="title">Source</span></div>
+          <div class="module-body">
+            <label class="field-label" for="rt-camera-select">Camera</label>
+            <select id="rt-camera-select"><option value="">Default camera</option></select>
+            <div class="btn-row"><button class="btn" id="rt-btn-start-camera">Start Camera</button></div>
+            <span class="hint">Audio is never captured.</span>
+          </div>
+        </div>
+
+        <!-- REFERENCE -->
+        <div class="module" id="rt-reference-module">
+          <div class="module-head"><span class="tag mono">MOD.02</span><span class="title" id="rt-reference-title">Reference Identity</span></div>
+          <div class="module-body">
+            <label class="dropzone" id="rt-dropzone" for="rt-ref-file-input">
+              <span id="rt-dropzone-text">Drop an image here, or click to browse<br><span class="hint">JPG · PNG · WEBP, up to 8MB</span></span>
+              <input type="file" id="rt-ref-file-input" accept="image/jpeg,image/png,image/webp" />
+            </label>
+            <div class="file-preview" id="rt-ref-preview">
+              <img id="rt-ref-preview-img" alt="Reference preview" />
+              <div class="meta">
+                <div class="name" id="rt-ref-preview-name"></div>
+                <div class="size" id="rt-ref-preview-size"></div>
+              </div>
+              <button class="clear-btn" id="rt-ref-clear-btn" title="Remove reference image">✕</button>
+            </div>
+            <span class="hint">Changing this mid-session updates the swap without reconnecting.</span>
+            <span class="consent-note">Only use a real person's likeness with their documented consent, or an original / fictional identity. Live outputs should carry on-screen disclosure per platform policy.</span>
+          </div>
+        </div>
+
+        <!-- DIRECTION -->
+        <div class="module">
+          <div class="module-head"><span class="tag mono">MOD.03</span><span class="title">Direction</span></div>
+          <div class="module-body">
+            <label class="field-label" for="rt-prompt-input">Prompt</label>
+            <textarea id="rt-prompt-input">Substitute the character in the video with the person in the reference image.</textarea>
+            <div class="btn-row"><button class="btn" id="rt-btn-apply-direction">Apply</button></div>
+          </div>
+        </div>
+
+        <!-- TRANSPORT -->
+        <div class="module">
+          <div class="module-head"><span class="tag mono">MOD.04</span><span class="title">Transport</span></div>
+          <div class="module-body">
+            <div class="btn-row">
+              <button class="btn btn-primary" id="rt-btn-connect">▶ Connect</button>
+              <button class="btn" id="rt-btn-disconnect" disabled>■ Disconnect</button>
+            </div>
+            <div class="btn-row">
+              <button class="btn" id="rt-btn-pause" disabled>⏸ Pause</button>
+              <button class="btn" id="rt-btn-resume" disabled>⏵ Resume</button>
+            </div>
+            <div class="btn-row"><button class="btn" id="rt-btn-reset" disabled>↺ Reset Session</button></div>
+            <div class="btn-row"><button class="btn" id="rt-btn-reconnect" style="display:none;">⟳ Reconnect</button></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </section>
+
+  <!-- ================= VIDEO STUDIO PANEL (Queue API) ================= -->
+  <section class="studio-panel" id="panel-video" role="tabpanel" aria-labelledby="tab-btn-video">
+    <div class="panel-intro">
+      <h2>Video Studio</h2>
+      <p>Upload a clip (or start from text/an image) and submit an async job. Jobs render in the background — track progress and download the result when it's ready.</p>
+    </div>
+    <main class="console">
+      <section class="monitor">
+        <div class="tally-strip" id="vid-tally-strip" data-state="idle"></div>
+        <div class="monitor-head">
+          <span class="label"><span>ACTIVE JOB</span></span>
+          <span class="status-word mono" id="vid-status-word" data-state="idle">IDLE</span>
+        </div>
+        <div class="video-frame">
+          <video id="vid-output-video" controls playsinline style="display:none;"></video>
+          <div class="placeholder" id="vid-placeholder">
+            NO JOB RUNNING<br>Configure a model and submit to render here.
+          </div>
+          <div class="loading-overlay" id="vid-loading-overlay">
+            <div class="spinner"></div>
+            <div class="msg" id="vid-loading-msg">QUEUED…</div>
+            <div class="progress-track"><div class="progress-fill" id="vid-progress-fill"></div></div>
+          </div>
+        </div>
+        <div class="telemetry">
+          <div class="cell"><span class="k">Status</span><span class="v" id="vid-tel-status">Idle</span></div>
+          <div class="cell"><span class="k">Job ID</span><span class="v" id="vid-tel-jobid" style="font-size:0.78rem;">—</span></div>
+          <div class="cell"><span class="k">Model</span><span class="v" id="vid-tel-model" style="font-size:0.78rem;">—</span></div>
+          <div class="cell"><span class="k">Elapsed</span><span class="v" id="vid-tel-elapsed">0s</span></div>
+        </div>
+      </section>
+
+      <section class="rail">
+        <!-- MODEL -->
+        <div class="module">
+          <div class="module-head"><span class="tag mono">MOD.00</span><span class="title">Model</span></div>
+          <div class="module-body">
+            <div class="model-picker" id="vid-model-picker">
+              <label class="model-card selected" data-model="video.lucy-2.1">
+                <input type="radio" name="vid-model" value="video.lucy-2.1" checked>
+                <span class="meta">
+                  <span class="name">Lucy 2.1 — Video Edit</span>
+                  <span class="desc">Upload a video, describe the edit (outfit swap, object add/remove, background change).</span>
+                </span>
+              </label>
+              <label class="model-card" data-model="video.lucy-vton-3">
+                <input type="radio" name="vid-model" value="video.lucy-vton-3">
+                <span class="meta">
+                  <span class="name">Lucy Virtual Try-On 3 — Video</span>
+                  <span class="desc">Upload a video + a garment reference image. Replaces the person's outfit consistently across frames.</span>
+                </span>
+              </label>
+              <label class="model-card" data-model="video.lucy-restyle-2">
+                <input type="radio" name="vid-model" value="video.lucy-restyle-2">
+                <span class="meta">
+                  <span class="name">Lucy Restyle 2 — Video</span>
+                  <span class="desc">Upload a video, apply a whole-scene style transfer (prompt-driven).</span>
+                </span>
+              </label>
+              <label class="model-card" data-model="video.lucy-pro-i2v">
+                <input type="radio" name="vid-model" value="video.lucy-pro-i2v">
+                <span class="meta">
+                  <span class="name">Lucy Pro — Image to Video</span>
+                  <span class="desc">Upload a single image and animate it into a short video from a prompt.</span>
+                </span>
+              </label>
+              <label class="model-card" data-model="video.lucy-pro-t2v">
+                <input type="radio" name="vid-model" value="video.lucy-pro-t2v">
+                <span class="meta">
+                  <span class="name">Lucy Pro — Text to Video</span>
+                  <span class="desc">No upload needed — generate a new video purely from a text prompt.</span>
+                </span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- SOURCE UPLOAD -->
+        <div class="module" id="vid-source-module">
+          <div class="module-head"><span class="tag mono">MOD.01</span><span class="title" id="vid-source-title">Source Video</span></div>
+          <div class="module-body">
+            <label class="dropzone" id="vid-dropzone" for="vid-file-input">
+              <span id="vid-dropzone-text">Drop a file here, or click to browse<br><span class="hint">MP4 · WebM · MOV, up to 300MB</span></span>
+              <input type="file" id="vid-file-input" accept="video/mp4,video/webm,video/quicktime,image/jpeg,image/png,image/webp" />
+            </label>
+            <div class="file-preview" id="vid-file-preview">
+              <div class="meta">
+                <div class="name" id="vid-file-preview-name"></div>
+                <div class="size" id="vid-file-preview-size"></div>
+              </div>
+              <button class="clear-btn" id="vid-file-clear-btn" title="Remove file">✕</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- REFERENCE IMAGE (try-on only) -->
+        <div class="module" id="vid-reference-module" style="display:none;">
+          <div class="module-head"><span class="tag mono">MOD.02</span><span class="title">Reference Garment</span></div>
+          <div class="module-body">
+            <label class="dropzone" id="vid-ref-dropzone" for="vid-ref-file-input">
+              <span id="vid-ref-dropzone-text">Drop a garment image here, or click to browse<br><span class="hint">JPG · PNG · WEBP, up to 8MB</span></span>
+              <input type="file" id="vid-ref-file-input" accept="image/jpeg,image/png,image/webp" />
+            </label>
+            <div class="file-preview" id="vid-ref-preview">
+              <img id="vid-ref-preview-img" alt="Reference preview" />
+              <div class="meta">
+                <div class="name" id="vid-ref-preview-name"></div>
+                <div class="size" id="vid-ref-preview-size"></div>
+              </div>
+              <button class="clear-btn" id="vid-ref-clear-btn" title="Remove reference image">✕</button>
+            </div>
+            <span class="hint">Clean garment image on a plain background works best.</span>
+          </div>
+        </div>
+
+        <!-- DIRECTION -->
+        <div class="module">
+          <div class="module-head"><span class="tag mono">MOD.03</span><span class="title">Direction</span></div>
+          <div class="module-body">
+            <label class="field-label" for="vid-prompt-input">Prompt</label>
+            <textarea id="vid-prompt-input" placeholder="Describe the edit or the video to generate…"></textarea>
+            <label class="field-label" for="vid-resolution-select">Output resolution</label>
+            <select id="vid-resolution-select">
+              <option value="720p" selected>720p</option>
+              <option value="480p">480p</option>
+            </select>
+            <span class="consent-note">Only use a real person's likeness with their documented consent, or an original / fictional identity.</span>
+          </div>
+        </div>
+
+        <!-- SUBMIT -->
+        <div class="module">
+          <div class="module-head"><span class="tag mono">MOD.04</span><span class="title">Render</span></div>
+          <div class="module-body">
+            <div class="btn-row"><button class="btn btn-primary" id="vid-btn-submit">▶ Submit Job</button></div>
+          </div>
+        </div>
+
+        <!-- JOB QUEUE -->
+        <div class="module">
+          <div class="module-head"><span class="tag mono">MOD.05</span><span class="title">Job Queue</span></div>
+          <div class="module-body">
+            <div class="job-list" id="vid-job-list">
+              <div class="job-empty" id="vid-job-empty">No jobs yet this session.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </section>
+
+  <!-- ================= IMAGE STUDIO PANEL (Process API) ================= -->
+  <section class="studio-panel" id="panel-image" role="tabpanel" aria-labelledby="tab-btn-image">
+    <div class="panel-intro">
+      <h2>Image Studio</h2>
+      <p>Synchronous image editing and text-to-image generation. Submit and the result comes back in one round trip — no polling.</p>
+    </div>
+    <main class="console">
+      <section class="monitor">
+        <div class="tally-strip" id="img-tally-strip" data-state="idle"></div>
+        <div class="monitor-head">
+          <span class="label"><span>OUTPUT</span></span>
+          <span class="status-word mono" id="img-status-word" data-state="idle">IDLE</span>
+        </div>
+        <div class="image-frame">
+          <img id="img-output-image" style="display:none;" alt="Generated output" />
+          <div class="placeholder" id="img-placeholder">
+            NO IMAGE YET<br>Configure a model and generate to see the result here.
+          </div>
+          <div class="loading-overlay" id="img-loading-overlay">
+            <div class="spinner"></div>
+            <div class="msg" id="img-loading-msg">GENERATING…</div>
+          </div>
+        </div>
+        <div class="telemetry">
+          <div class="cell"><span class="k">Status</span><span class="v" id="img-tel-status">Idle</span></div>
+          <div class="cell"><span class="k">Model</span><span class="v" id="img-tel-model" style="font-size:0.78rem;">—</span></div>
+          <div class="cell"><span class="k">Elapsed</span><span class="v" id="img-tel-elapsed">0.0s</span></div>
+          <div class="cell"><span class="k">Output</span><span class="v" id="img-tel-output" style="font-size:0.78rem;">—</span></div>
+        </div>
+      </section>
+
+      <section class="rail">
+        <!-- MODEL -->
+        <div class="module">
+          <div class="module-head"><span class="tag mono">MOD.00</span><span class="title">Model</span></div>
+          <div class="module-body">
+            <div class="model-picker" id="img-model-picker">
+              <label class="model-card selected" data-model="image.lucy-image-2">
+                <input type="radio" name="img-model" value="image.lucy-image-2" checked>
+                <span class="meta">
+                  <span class="name">Lucy Image — Edit</span>
+                  <span class="desc">Upload an image and describe changes: add, remove, or restyle elements while preserving the rest.</span>
+                </span>
+              </label>
+              <label class="model-card" data-model="image.lucy-pro-t2i">
+                <input type="radio" name="img-model" value="image.lucy-pro-t2i">
+                <span class="meta">
+                  <span class="name">Lucy Pro — Text to Image</span>
+                  <span class="desc">No upload needed — generate a new image purely from a text prompt.</span>
+                </span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- SOURCE UPLOAD -->
+        <div class="module" id="img-source-module">
+          <div class="module-head"><span class="tag mono">MOD.01</span><span class="title">Source Image</span></div>
+          <div class="module-body">
+            <label class="dropzone" id="img-dropzone" for="img-file-input">
+              <span id="img-dropzone-text">Drop an image here, or click to browse<br><span class="hint">JPG · PNG · WEBP, up to 5MB</span></span>
+              <input type="file" id="img-file-input" accept="image/jpeg,image/png,image/webp" />
+            </label>
+            <div class="file-preview" id="img-file-preview">
+              <img id="img-file-preview-img" alt="Source preview" />
+              <div class="meta">
+                <div class="name" id="img-file-preview-name"></div>
+                <div class="size" id="img-file-preview-size"></div>
+              </div>
+              <button class="clear-btn" id="img-file-clear-btn" title="Remove file">✕</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- DIRECTION -->
+        <div class="module">
+          <div class="module-head"><span class="tag mono">MOD.02</span><span class="title">Direction</span></div>
+          <div class="module-body">
+            <label class="field-label" for="img-prompt-input">Prompt</label>
+            <textarea id="img-prompt-input" placeholder="Describe the edit or the image to generate…"></textarea>
+            <div class="field-row" id="img-t2i-options" style="display:none;">
+              <div>
+                <label class="field-label" for="img-aspect-select">Aspect ratio</label>
+                <select id="img-aspect-select">
+                  <option value="16:9">16:9 landscape</option>
+                  <option value="9:16">9:16 portrait</option>
+                </select>
+              </div>
+            </div>
+            <span class="consent-note">Only use a real person's likeness with their documented consent, or an original / fictional identity.</span>
+          </div>
+        </div>
+
+        <!-- GENERATE -->
+        <div class="module">
+          <div class="module-head"><span class="tag mono">MOD.03</span><span class="title">Generate</span></div>
+          <div class="module-body">
+            <div class="btn-row"><button class="btn btn-primary" id="img-btn-generate">▶ Generate</button></div>
+            <div class="btn-row"><button class="btn" id="img-btn-download" disabled>⬇ Download Result</button></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </section>
+
+  <footer><span class="accent">ANONYMOUX™</span> LIVECAST — Edit Beyond Reality — built on the full Decart Lucy model family via the official @decartai/sdk.</footer>
+
+  <div class="toast-stack" id="toast-stack"></div>
+
+  <script type="module">
+    import { createDecartClient, models } from "https://esm.sh/@decartai/sdk";
+
+    // =========================================================================
+    // SHARED UTILITIES
+    // =========================================================================
+    const toastStack = document.getElementById('toast-stack');
+    function toast(message, kind = 'info') {
+      const t = document.createElement('div');
+      t.className = `toast ${kind}`;
+      t.textContent = message;
+      toastStack.appendChild(t);
+      setTimeout(() => {
+        t.style.opacity = '0';
+        t.style.transition = 'opacity 0.2s ease';
+        setTimeout(() => t.remove(), 220);
+      }, 4200);
+    }
+
+    function logLifecycle(scope, msg) {
+      console.log(`[Livecast:${scope}] ${new Date().toISOString()} — ${msg}`);
+    }
+
+    function formatBytes(bytes) {
+      if (bytes < 1024) return `${bytes} B`;
+      if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+      return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    }
+
+    // Wires a dropzone + file input + preview block together generically.
+    // Returns { getFile(), setFile(file), clear(), onFileChange(cb) }
+    function wireDropzone({ dropzoneEl, inputEl, previewEl, previewImgEl, nameEl, sizeEl, clearBtnEl, validate }) {
+      let currentFile = null;
+      let changeCallback = null;
+
+      function applyPreview(file) {
+        if (previewImgEl) {
+          if (file.type.startsWith('image/')) {
+            previewImgEl.src = URL.createObjectURL(file);
+            previewImgEl.style.display = '';
+          } else {
+            previewImgEl.style.display = 'none';
+          }
+        }
+        if (nameEl) nameEl.textContent = file.name;
+        if (sizeEl) sizeEl.textContent = formatBytes(file.size);
+        if (previewEl) previewEl.classList.add('active');
+        const textSpan = dropzoneEl.querySelector('span[id$="-text"]');
+        if (textSpan) textSpan.style.display = 'none';
+      }
+
+      function setFile(file) {
+        if (validate && !validate(file)) return false;
+        currentFile = file;
+        applyPreview(file);
+        if (changeCallback) changeCallback(file);
+        return true;
+      }
+
+      function clear() {
+        currentFile = null;
+        if (previewEl) previewEl.classList.remove('active');
+        const textSpan = dropzoneEl.querySelector('span[id$="-text"]');
+        if (textSpan) textSpan.style.display = 'block';
+        if (inputEl) inputEl.value = '';
+        if (changeCallback) changeCallback(null);
+      }
+
+      ['dragenter', 'dragover'].forEach((evt) => {
+        dropzoneEl.addEventListener(evt, (e) => { e.preventDefault(); dropzoneEl.classList.add('dragover'); });
+      });
+      ['dragleave', 'drop'].forEach((evt) => {
+        dropzoneEl.addEventListener(evt, (e) => { e.preventDefault(); dropzoneEl.classList.remove('dragover'); });
+      });
+      dropzoneEl.addEventListener('drop', (e) => {
+        const file = e.dataTransfer.files?.[0];
+        if (file) setFile(file);
+      });
+      inputEl.addEventListener('change', (e) => {
+        const file = e.target.files?.[0];
+        if (file) setFile(file);
+      });
+      if (clearBtnEl) clearBtnEl.addEventListener('click', clear);
+
+      return {
+        getFile: () => currentFile,
+        setFile,
+        clear,
+        onFileChange: (cb) => { changeCallback = cb; },
+      };
+    }
+
+    // Wires a set of radio-backed .model-card elements into a single-select group.
+    function wireModelPicker(containerEl, onChange) {
+      const cards = Array.from(containerEl.querySelectorAll('.model-card'));
+      let selected = containerEl.querySelector('input[type="radio"]:checked')?.value || cards[0]?.dataset.model;
+
+      cards.forEach((card) => {
+        card.addEventListener('click', () => {
+          const radio = card.querySelector('input[type="radio"]');
+          radio.checked = true;
+          cards.forEach((c) => c.classList.remove('selected'));
+          card.classList.add('selected');
+          selected = card.dataset.model;
+          onChange(selected);
+        });
+      });
+
+      return { getSelected: () => selected };
+    }
+
+    // =========================================================================
+    // TAB NAVIGATION
+    // =========================================================================
+    const tabs = [
+      { btn: document.getElementById('tab-btn-realtime'), panel: document.getElementById('panel-realtime') },
+      { btn: document.getElementById('tab-btn-video'), panel: document.getElementById('panel-video') },
+      { btn: document.getElementById('tab-btn-image'), panel: document.getElementById('panel-image') },
+    ];
+    tabs.forEach(({ btn, panel }) => {
+      btn.addEventListener('click', () => {
+        tabs.forEach((t) => {
+          t.btn.setAttribute('aria-selected', 'false');
+          t.panel.classList.remove('active');
+        });
+        btn.setAttribute('aria-selected', 'true');
+        panel.classList.add('active');
+      });
+    });
+
+    // =========================================================================
+    // SERVER HEALTH / CONFIG CHIP
+    // =========================================================================
+    const configChip = document.getElementById('config-chip');
+    const configChipText = document.getElementById('config-chip-text');
+
+    async function checkHealth() {
+      try {
+        const health = await fetch('/health').then((r) => r.json());
+        if (health.configured) {
+          configChip.classList.add('ok');
+          configChipText.textContent = `${health.models?.length ?? 0} models ready`;
+        } else {
+          configChip.classList.remove('ok');
+          configChipText.textContent = 'DECART_API_KEY not set';
+          toast('Server has no DECART_API_KEY configured yet.', 'warn');
+        }
+      } catch (err) {
+        configChip.classList.remove('ok');
+        configChipText.textContent = 'Server unreachable';
+        toast('Could not reach the backend. Is the server running?', 'error');
+      }
+    }
+
+    // =========================================================================
+    // REALTIME STUDIO
+    // =========================================================================
+    (function initRealtimeStudio() {
+      const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
+      const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
+      const DEFAULT_PROMPT = "Substitute the character in the video with the person in the reference image.";
+
+      const el = {
+        tallyStrip: document.getElementById('rt-tally-strip'),
+        statusWord: document.getElementById('rt-status-word'),
+        outputVideo: document.getElementById('rt-output-video'),
+        localVideo: document.getElementById('rt-local-video'),
+        placeholder: document.getElementById('rt-placeholder'),
+        loadingOverlay: document.getElementById('rt-loading-overlay'),
+        loadingMsg: document.getElementById('rt-loading-msg'),
+        telStatus: document.getElementById('rt-tel-status'),
+        telLatency: document.getElementById('rt-tel-latency'),
+        telFrames: document.getElementById('rt-tel-frames'),
+        telGen: document.getElementById('rt-tel-gen'),
+        cameraSelect: document.getElementById('rt-camera-select'),
+        btnStartCamera: document.getElementById('rt-btn-start-camera'),
+        referenceModule: document.getElementById('rt-reference-module'),
+        referenceTitle: document.getElementById('rt-reference-title'),
+        dropzone: document.getElementById('rt-dropzone'),
+        refFileInput: document.getElementById('rt-ref-file-input'),
+        refPreview: document.getElementById('rt-ref-preview'),
+        refPreviewImg: document.getElementById('rt-ref-preview-img'),
+        refPreviewName: document.getElementById('rt-ref-preview-name'),
+        refPreviewSize: document.getElementById('rt-ref-preview-size'),
+        refClearBtn: document.getElementById('rt-ref-clear-btn'),
+        promptInput: document.getElementById('rt-prompt-input'),
+        btnApplyDirection: document.getElementById('rt-btn-apply-direction'),
+        btnConnect: document.getElementById('rt-btn-connect'),
+        btnDisconnect: document.getElementById('rt-btn-disconnect'),
+        btnPause: document.getElementById('rt-btn-pause'),
+        btnResume: document.getElementById('rt-btn-resume'),
+        btnReset: document.getElementById('rt-btn-reset'),
+        btnReconnect: document.getElementById('rt-btn-reconnect'),
+        modelPicker: document.getElementById('rt-model-picker'),
+      };
+
+      const MODEL_SPECS = {
+        'realtime.lucy-2.5': { sdkName: 'lucy-2.5', refLabel: 'Reference Identity', refHint: "Changing this mid-session updates the swap without reconnecting." },
+        'realtime.lucy-vton-3': { sdkName: 'lucy-vton-3', refLabel: 'Reference Garment', refHint: "Upload a clean garment image. Applies to the person on camera." },
+        'realtime.lucy-restyle-2': { sdkName: 'lucy-restyle-2', refLabel: 'Reference Style (optional)', refHint: "Restyle is mostly prompt-driven; a reference image is optional." },
+      };
+
+      const state = {
+        localStream: null,
+        realtimeClient: null,
+        referenceFile: null,
+        isPaused: false,
+        frameCount: 0,
+        connectionState: 'idle',
+        frameCallbackHandle: null,
+        selectedModel: 'realtime.lucy-2.5',
+      };
+
+      const picker = wireModelPicker(el.modelPicker, (modelId) => {
+        state.selectedModel = modelId;
+        const spec = MODEL_SPECS[modelId];
+        el.referenceTitle.textContent = spec.refLabel;
+        // If a live session is running under a different model, the user must reconnect.
+        if (state.connectionState === 'connected' || state.connectionState === 'generating') {
+          toast('Model changed — reconnect to apply it.', 'warn');
+        }
+      });
+
+      function setConnectionState(newState) {
+        state.connectionState = newState;
+        el.tallyStrip.dataset.state = newState;
+        el.statusWord.dataset.state = newState;
+
+        const labels = {
+          idle: 'STANDBY', connecting: 'CONNECTING', connected: 'ON AIR', generating: 'ON AIR',
+          reconnecting: 'RECONNECTING', disconnected: 'STANDBY', error: 'ERROR',
+        };
+        el.statusWord.textContent = labels[newState] || newState.toUpperCase();
+        el.telStatus.textContent = labels[newState] || newState;
+
+        const isLive = newState === 'connected' || newState === 'generating';
+        const isBusy = newState === 'connecting' || newState === 'reconnecting';
+
+        el.btnConnect.disabled = isLive || isBusy;
+        el.btnDisconnect.disabled = !isLive && newState !== 'reconnecting';
+        el.btnPause.disabled = !isLive || state.isPaused;
+        el.btnResume.disabled = !isLive || !state.isPaused;
+        el.btnReset.disabled = newState === 'idle';
+        el.btnReconnect.style.display = (newState === 'error') ? 'inline-flex' : 'none';
+
+        el.loadingOverlay.classList.toggle('active', isBusy);
+        if (isBusy) el.loadingMsg.textContent = newState === 'reconnecting' ? 'RECONNECTING…' : 'CONNECTING…';
+        el.placeholder.style.display = (newState === 'idle' || newState === 'disconnected') ? 'flex' : 'none';
+      }
+
+      async function populateCameraList() {
+        try {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const cams = devices.filter((d) => d.kind === 'videoinput');
+          el.cameraSelect.innerHTML = '<option value="">Default camera</option>';
+          cams.forEach((cam, i) => {
+            const opt = document.createElement('option');
+            opt.value = cam.deviceId;
+            opt.textContent = cam.label || `Camera ${i + 1}`;
+            el.cameraSelect.appendChild(opt);
+          });
+        } catch (err) {
+          logLifecycle('realtime', `Could not enumerate cameras: ${err.message}`);
+        }
+      }
+
+      async function startCamera() {
+        try {
+          const sdkModel = models.realtime(MODEL_SPECS[state.selectedModel].sdkName);
+          const deviceId = el.cameraSelect.value || undefined;
+          const constraints = {
+            audio: false,
+            video: {
+              frameRate: sdkModel.fps,
+              width: { ideal: sdkModel.width },
+              height: { ideal: sdkModel.height },
+              facingMode: deviceId ? undefined : 'user',
+              deviceId: deviceId ? { exact: deviceId } : undefined,
+            },
+          };
+          const stream = await navigator.mediaDevices.getUserMedia(constraints);
+          if (state.localStream) state.localStream.getTracks().forEach((t) => t.stop());
+          state.localStream = stream;
+          el.localVideo.srcObject = stream;
+          await populateCameraList();
+          toast('Camera ready.', 'success');
+          logLifecycle('realtime', 'Camera started.');
+        } catch (err) {
+          console.error(err);
+          toast(`Camera permission or access failed: ${err.message}`, 'error');
+        }
+      }
+
+      function validateReferenceFile(file) {
+        if (!ALLOWED_TYPES.includes(file.type)) { toast('Unsupported file type. Use JPG, PNG, or WEBP.', 'error'); return false; }
+        if (file.size > MAX_UPLOAD_BYTES) { toast('Image exceeds the 8MB limit.', 'error'); return false; }
+        return true;
+      }
+
+      const refDropzone = wireDropzone({
+        dropzoneEl: el.dropzone, inputEl: el.refFileInput, previewEl: el.refPreview,
+        previewImgEl: el.refPreviewImg, nameEl: el.refPreviewName, sizeEl: el.refPreviewSize,
+        clearBtnEl: el.refClearBtn, validate: validateReferenceFile,
+      });
+      refDropzone.onFileChange(async (file) => {
+        state.referenceFile = file;
+        if (!file) return;
+        if (state.realtimeClient && (state.connectionState === 'connected' || state.connectionState === 'generating')) {
+          try {
+            await state.realtimeClient.set({
+              prompt: el.promptInput.value.trim() || DEFAULT_PROMPT,
+              image: file,
+              enhance: true,
+            });
+            toast('Reference image updated live.', 'success');
+          } catch (err) {
+            toast(`Could not apply reference image: ${err.message}`, 'error');
+          }
+        } else {
+          toast('Reference image staged. It will apply once connected.', 'info');
+        }
+      });
+
+      function startFrameTelemetry() {
+        state.frameCount = 0;
+        if (!('requestVideoFrameCallback' in HTMLVideoElement.prototype)) return;
+        const tick = () => {
+          state.frameCount += 1;
+          el.telFrames.textContent = state.frameCount.toLocaleString();
+          state.frameCallbackHandle = el.outputVideo.requestVideoFrameCallback(tick);
+        };
+        state.frameCallbackHandle = el.outputVideo.requestVideoFrameCallback(tick);
+      }
+      function stopFrameTelemetry() {
+        if (state.frameCallbackHandle && el.outputVideo.cancelVideoFrameCallback) {
+          el.outputVideo.cancelVideoFrameCallback(state.frameCallbackHandle);
+        }
+        state.frameCallbackHandle = null;
+      }
+
+      async function fetchClientToken() {
+        const res = await fetch('/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: state.selectedModel }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok || !data.apiKey) throw new Error(data.message || 'Failed to obtain a client token from the server.');
+        return data;
+      }
+
+      async function connectSession() {
+        if (!state.localStream) { toast('Start a camera first.', 'warn'); return; }
+        setConnectionState('connecting');
+        logLifecycle('realtime', 'Requesting client token…');
+        try {
+          const token = await fetchClientToken();
+          const sdkModel = models.realtime(MODEL_SPECS[state.selectedModel].sdkName);
+          const client = createDecartClient({ apiKey: token.apiKey });
+          const initialPrompt = el.promptInput.value.trim() || DEFAULT_PROMPT;
+
+          const realtimeClient = await client.realtime.connect(state.localStream, {
+            model: sdkModel,
+            mirror: 'auto',
+            onRemoteStream: (transformedStream) => {
+              el.outputVideo.srcObject = transformedStream;
+              startFrameTelemetry();
+            },
+            initialState: {
+              prompt: { text: initialPrompt, enhance: true },
+              ...(state.referenceFile ? { image: state.referenceFile } : {}),
+            },
+          });
+
+          state.realtimeClient = realtimeClient;
+
+          realtimeClient.on('connectionChange', (connState) => {
+            logLifecycle('realtime', `Connection state → ${connState}`);
+            setConnectionState(connState);
+            if (connState === 'connected' || connState === 'generating') toast('Session live.', 'success');
+            if (connState === 'disconnected') stopFrameTelemetry();
+          });
+          realtimeClient.on('generationTick', ({ seconds }) => { el.telGen.textContent = `${seconds.toFixed(1)}s`; });
+          realtimeClient.on('error', (error) => {
+            console.error('[Decart] error:', error.code, error.message);
+            toast(`Decart error: ${error.message}`, 'error');
+            setConnectionState('error');
+          });
+        } catch (err) {
+          console.error(err);
+          toast(`Connection failed: ${err.message}`, 'error');
+          setConnectionState('error');
+        }
+      }
+
+      function disconnectSession({ silent = false } = {}) {
+        if (state.realtimeClient) {
+          try { state.realtimeClient.disconnect(); } catch (err) { console.warn(err); }
+          state.realtimeClient = null;
+        }
+        stopFrameTelemetry();
+        el.outputVideo.srcObject = null;
+        state.isPaused = false;
+        setConnectionState('idle');
+        if (!silent) toast('Session ended.', 'info');
+      }
+
+      function pauseSession() {
+        if (!state.localStream) return;
+        state.localStream.getVideoTracks().forEach((t) => (t.enabled = false));
+        state.isPaused = true;
+        el.btnPause.disabled = true;
+        el.btnResume.disabled = false;
+        toast('Camera feed paused.', 'warn');
+      }
+      function resumeSession() {
+        if (!state.localStream) return;
+        state.localStream.getVideoTracks().forEach((t) => (t.enabled = true));
+        state.isPaused = false;
+        el.btnPause.disabled = false;
+        el.btnResume.disabled = true;
+        toast('Camera feed resumed.', 'success');
+      }
+      async function resetSession() {
+        disconnectSession({ silent: true });
+        if (state.localStream) { state.localStream.getTracks().forEach((t) => t.stop()); state.localStream = null; }
+        el.localVideo.srcObject = null;
+        refDropzone.clear();
+        el.promptInput.value = DEFAULT_PROMPT;
+        el.telFrames.textContent = '0';
+        el.telGen.textContent = '0.0s';
+        toast('Session reset.', 'info');
+      }
+      async function applyDirection() {
+        if (!state.realtimeClient) { toast('Connect a session before applying direction.', 'warn'); return; }
+        const prompt = el.promptInput.value.trim() || DEFAULT_PROMPT;
+        try {
+          await state.realtimeClient.set({
+            prompt,
+            ...(state.referenceFile ? { image: state.referenceFile } : {}),
+            enhance: true,
+          });
+          toast('Direction applied.', 'success');
+        } catch (err) {
+          toast(`Could not apply direction: ${err.message}`, 'error');
+        }
+      }
+
+      el.btnStartCamera.addEventListener('click', startCamera);
+      el.btnConnect.addEventListener('click', connectSession);
+      el.btnDisconnect.addEventListener('click', () => disconnectSession());
+      el.btnPause.addEventListener('click', pauseSession);
+      el.btnResume.addEventListener('click', resumeSession);
+      el.btnReset.addEventListener('click', resetSession);
+      el.btnReconnect.addEventListener('click', connectSession);
+      el.btnApplyDirection.addEventListener('click', applyDirection);
+      el.cameraSelect.addEventListener('change', () => { if (state.localStream) startCamera(); });
+
+      window.addEventListener('beforeunload', () => {
+        if (state.realtimeClient) { try { state.realtimeClient.disconnect(); } catch (_) {} }
+        if (state.localStream) state.localStream.getTracks().forEach((t) => t.stop());
+      });
+
+      (async function init() {
+        setConnectionState('idle');
+        try {
+          const probe = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+          probe.getTracks().forEach((t) => t.stop());
+          await populateCameraList();
+        } catch (err) {
+          logLifecycle('realtime', `Camera permission not yet granted: ${err.message}`);
+        }
+      })();
+    })();
+
+    // =========================================================================
+    // VIDEO STUDIO (Queue API — upload, submit, poll, download)
+    // =========================================================================
+    (function initVideoStudio() {
+      const MAX_VIDEO_BYTES = 300 * 1024 * 1024;
+      const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+      const VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
+      const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+      const POLL_INTERVAL_MS = 3000;
+
+      const el = {
+        tallyStrip: document.getElementById('vid-tally-strip'),
+        statusWord: document.getElementById('vid-status-word'),
+        outputVideo: document.getElementById('vid-output-video'),
+        placeholder: document.getElementById('vid-placeholder'),
+        loadingOverlay: document.getElementById('vid-loading-overlay'),
+        loadingMsg: document.getElementById('vid-loading-msg'),
+        progressFill: document.getElementById('vid-progress-fill'),
+        telStatus: document.getElementById('vid-tel-status'),
+        telJobId: document.getElementById('vid-tel-jobid'),
+        telModel: document.getElementById('vid-tel-model'),
+        telElapsed: document.getElementById('vid-tel-elapsed'),
+        modelPicker: document.getElementById('vid-model-picker'),
+        sourceModule: document.getElementById('vid-source-module'),
+        sourceTitle: document.getElementById('vid-source-title'),
+        dropzone: document.getElementById('vid-dropzone'),
+        dropzoneText: document.getElementById('vid-dropzone-text'),
+        fileInput: document.getElementById('vid-file-input'),
+        filePreview: document.getElementById('vid-file-preview'),
+        filePreviewName: document.getElementById('vid-file-preview-name'),
+        filePreviewSize: document.getElementById('vid-file-preview-size'),
+        fileClearBtn: document.getElementById('vid-file-clear-btn'),
+        referenceModule: document.getElementById('vid-reference-module'),
+        refDropzone: document.getElementById('vid-ref-dropzone'),
+        refFileInput: document.getElementById('vid-ref-file-input'),
+        refPreview: document.getElementById('vid-ref-preview'),
+        refPreviewImg: document.getElementById('vid-ref-preview-img'),
+        refPreviewName: document.getElementById('vid-ref-preview-name'),
+        refPreviewSize: document.getElementById('vid-ref-preview-size'),
+        refClearBtn: document.getElementById('vid-ref-clear-btn'),
+        promptInput: document.getElementById('vid-prompt-input'),
+        resolutionSelect: document.getElementById('vid-resolution-select'),
+        btnSubmit: document.getElementById('vid-btn-submit'),
+        jobList: document.getElementById('vid-job-list'),
+        jobEmpty: document.getElementById('vid-job-empty'),
+      };
+
+      const MODEL_SPECS = {
+        'video.lucy-2.1': { needsData: true, dataKind: 'video', needsReference: false, sourceTitle: 'Source Video', sourceAccept: 'video/mp4,video/webm,video/quicktime' },
+        'video.lucy-vton-3': { needsData: true, dataKind: 'video', needsReference: true, sourceTitle: 'Source Video', sourceAccept: 'video/mp4,video/webm,video/quicktime' },
+        'video.lucy-restyle-2': { needsData: true, dataKind: 'video', needsReference: false, sourceTitle: 'Source Video', sourceAccept: 'video/mp4,video/webm,video/quicktime' },
+        'video.lucy-pro-i2v': { needsData: true, dataKind: 'image', needsReference: false, sourceTitle: 'Source Image', sourceAccept: 'image/jpeg,image/png,image/webp' },
+        'video.lucy-pro-t2v': { needsData: false, dataKind: null, needsReference: false, sourceTitle: '', sourceAccept: '' },
+      };
+
+      const state = { selectedModel: 'video.lucy-2.1', jobs: [] }; // jobs: { id, jobId, model, prompt, status, startedAt, pollHandle }
+
+      function applyModelUI(modelId) {
+        const spec = MODEL_SPECS[modelId];
+        el.sourceModule.style.display = spec.needsData ? '' : 'none';
+        el.referenceModule.style.display = spec.needsReference ? '' : 'none';
+        if (spec.needsData) {
+          el.sourceTitle.textContent = spec.sourceTitle;
+          el.fileInput.setAttribute('accept', spec.sourceAccept);
+          el.dropzoneText.innerHTML = spec.dataKind === 'video'
+            ? 'Drop a video here, or click to browse<br><span class="hint">MP4 · WebM · MOV, up to 300MB</span>'
+            : 'Drop an image here, or click to browse<br><span class="hint">JPG · PNG · WEBP, up to 8MB</span>';
+        }
+      }
+
+      const picker = wireModelPicker(el.modelPicker, (modelId) => {
+        state.selectedModel = modelId;
+        applyModelUI(modelId);
+        fileDropzone.clear();
+      });
+      applyModelUI(state.selectedModel);
+
+      function validateSourceFile(file) {
+        const spec = MODEL_SPECS[state.selectedModel];
+        if (spec.dataKind === 'video') {
+          if (!VIDEO_TYPES.includes(file.type)) { toast('Unsupported file type. Use MP4, WebM, or MOV.', 'error'); return false; }
+          if (file.size > MAX_VIDEO_BYTES) { toast('Video exceeds the 300MB limit.', 'error'); return false; }
+        } else {
+          if (!IMAGE_TYPES.includes(file.type)) { toast('Unsupported file type. Use JPG, PNG, or WEBP.', 'error'); return false; }
+          if (file.size > MAX_IMAGE_BYTES) { toast('Image exceeds the 8MB limit.', 'error'); return false; }
+        }
+        return true;
+      }
+      function validateReferenceFile(file) {
+        if (!IMAGE_TYPES.includes(file.type)) { toast('Unsupported file type. Use JPG, PNG, or WEBP.', 'error'); return false; }
+        if (file.size > MAX_IMAGE_BYTES) { toast('Image exceeds the 8MB limit.', 'error'); return false; }
+        return true;
+      }
+
+      const fileDropzone = wireDropzone({
+        dropzoneEl: el.dropzone, inputEl: el.fileInput, previewEl: el.filePreview,
+        nameEl: el.filePreviewName, sizeEl: el.filePreviewSize, clearBtnEl: el.fileClearBtn,
+        validate: validateSourceFile,
+      });
+      const refDropzone = wireDropzone({
+        dropzoneEl: el.refDropzone, inputEl: el.refFileInput, previewEl: el.refPreview,
+        previewImgEl: el.refPreviewImg, nameEl: el.refPreviewName, sizeEl: el.refPreviewSize,
+        clearBtnEl: el.refClearBtn, validate: validateReferenceFile,
+      });
+
+      function setMonitorState(newState) {
+        el.tallyStrip.dataset.state = newState;
+        el.statusWord.dataset.state = newState;
+        const labels = { idle: 'IDLE', queued: 'QUEUED', processing: 'PROCESSING', completed: 'DONE', failed: 'FAILED' };
+        el.statusWord.textContent = labels[newState] || newState.toUpperCase();
+        el.telStatus.textContent = labels[newState] || newState;
+        const isBusy = newState === 'queued' || newState === 'processing';
+        el.loadingOverlay.classList.toggle('active', isBusy);
+        if (isBusy) el.loadingMsg.textContent = (labels[newState] || newState).toUpperCase() + '…';
+        el.placeholder.style.display = (newState === 'idle') ? 'flex' : 'none';
+      }
+
+      function renderJobList() {
+        if (state.jobs.length === 0) {
+          el.jobList.innerHTML = '';
+          el.jobList.appendChild(el.jobEmpty);
+          return;
+        }
+        el.jobList.innerHTML = '';
+        state.jobs.slice().reverse().forEach((job) => {
+          const card = document.createElement('div');
+          card.className = 'job-card';
+          const shortId = job.jobId ? job.jobId.slice(0, 10) + '…' : '—';
+          card.innerHTML = `
+            <div class="job-top">
+              <span class="job-model mono">${job.modelLabel}</span>
+              <span class="job-status mono" data-state="${job.status}">${job.status}</span>
+            </div>
+            <div class="job-prompt">${job.prompt}</div>
+            <div class="hint mono">Job ${shortId}</div>
+            <div class="job-actions"></div>
+          `;
+          const actions = card.querySelector('.job-actions');
+          if (job.status === 'completed') {
+            const viewBtn = document.createElement('button');
+            viewBtn.className = 'btn btn-sm';
+            viewBtn.textContent = 'View in monitor';
+            viewBtn.addEventListener('click', () => loadResultIntoMonitor(job));
+            const dlBtn = document.createElement('button');
+            dlBtn.className = 'btn btn-sm';
+            dlBtn.textContent = 'Download';
+            dlBtn.addEventListener('click', () => downloadResult(job));
+            actions.append(viewBtn, dlBtn);
+          } else if (job.status === 'failed') {
+            const retryHint = document.createElement('span');
+            retryHint.className = 'hint';
+            retryHint.textContent = job.errorMessage || 'Job failed.';
+            actions.append(retryHint);
+          }
+          el.jobList.appendChild(card);
+        });
+      }
+
+      async function loadResultIntoMonitor(job) {
+        setMonitorState('processing');
+        el.loadingMsg.textContent = 'LOADING RESULT…';
+        el.loadingOverlay.classList.add('active');
+        try {
+          const res = await fetch(`/api/video/result/${job.jobId}`);
+          if (!res.ok) throw new Error('Could not fetch result.');
+          const blob = await res.blob();
+          el.outputVideo.src = URL.createObjectURL(blob);
+          el.outputVideo.style.display = '';
+          el.placeholder.style.display = 'none';
+          el.telJobId.textContent = job.jobId.slice(0, 14) + '…';
+          el.telModel.textContent = job.modelLabel;
+          setMonitorState('completed');
+        } catch (err) {
+          toast(`Could not load result: ${err.message}`, 'error');
+          setMonitorState('failed');
+        } finally {
+          el.loadingOverlay.classList.remove('active');
+        }
+      }
+
+      async function downloadResult(job) {
+        try {
+          const res = await fetch(`/api/video/result/${job.jobId}`);
+          if (!res.ok) throw new Error('Could not fetch result.');
+          const blob = await res.blob();
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = `anonymoux-${job.jobId}.mp4`;
+          a.click();
+          toast('Download started.', 'success');
+        } catch (err) {
+          toast(`Download failed: ${err.message}`, 'error');
+        }
+      }
+
+      function pollJob(job) {
+        job.pollHandle = setInterval(async () => {
+          try {
+            const res = await fetch(`/api/video/status/${job.jobId}`);
+            const data = await res.json();
+            if (!res.ok || !data.ok) throw new Error(data.message || 'Status check failed.');
+
+            job.status = data.status;
+            job.elapsedSeconds = Math.round((Date.now() - job.startedAt) / 1000);
+
+            if (state.jobs[state.jobs.length - 1] === job) {
+              setMonitorState(data.status);
+              el.telElapsed.textContent = `${job.elapsedSeconds}s`;
+              if (typeof data.progress === 'number') {
+                el.progressFill.style.width = `${Math.round(data.progress * 100)}%`;
+              }
+            }
+            renderJobList();
+
+            if (data.status === 'completed') {
+              clearInterval(job.pollHandle);
+              toast(`Job complete: ${job.modelLabel}`, 'success');
+              if (state.jobs[state.jobs.length - 1] === job) loadResultIntoMonitor(job);
+            } else if (data.status === 'failed') {
+              clearInterval(job.pollHandle);
+              job.errorMessage = data.message || data.error || 'Job failed.';
+              toast(`Job failed: ${job.errorMessage}`, 'error');
+              renderJobList();
+            }
+          } catch (err) {
+            clearInterval(job.pollHandle);
+            job.status = 'failed';
+            job.errorMessage = err.message;
+            toast(`Polling error: ${err.message}`, 'error');
+            renderJobList();
+          }
+        }, POLL_INTERVAL_MS);
+      }
+
+      async function submitJob() {
+        const spec = MODEL_SPECS[state.selectedModel];
+        const prompt = el.promptInput.value.trim();
+        if (!prompt) { toast('Enter a prompt first.', 'warn'); return; }
+
+        const sourceFile = fileDropzone.getFile();
+        if (spec.needsData && !sourceFile) { toast('Upload a source file first.', 'warn'); return; }
+
+        const refFile = refDropzone.getFile();
+        if (spec.needsReference && !refFile) { toast('Upload a reference image first.', 'warn'); return; }
+
+        const modelLabelEl = el.modelPicker.querySelector(`.model-card[data-model="${state.selectedModel}"] .name`);
+        const modelLabel = modelLabelEl ? modelLabelEl.textContent : state.selectedModel;
+
+        el.btnSubmit.disabled = true;
+        el.btnSubmit.textContent = 'Submitting…';
+
+        try {
+          const formData = new FormData();
+          formData.append('model', state.selectedModel);
+          formData.append('prompt', prompt);
+          formData.append('resolution', el.resolutionSelect.value);
+          if (sourceFile) formData.append('data', sourceFile);
+          if (refFile) formData.append('image', refFile);
+
+          const res = await fetch('/api/video/submit', { method: 'POST', body: formData });
+          const data = await res.json();
+          if (!res.ok || !data.ok) throw new Error(data.message || 'Submission failed.');
+
+          const job = {
+            id: crypto.randomUUID(),
+            jobId: data.jobId,
+            model: state.selectedModel,
+            modelLabel,
+            prompt,
+            status: 'queued',
+            startedAt: Date.now(),
+            pollHandle: null,
+          };
+          state.jobs.push(job);
+          el.telJobId.textContent = job.jobId.slice(0, 14) + '…';
+          el.telModel.textContent = modelLabel;
+          el.progressFill.style.width = '0%';
+          setMonitorState('queued');
+          el.outputVideo.style.display = 'none';
+          renderJobList();
+          pollJob(job);
+          toast('Job submitted.', 'success');
+        } catch (err) {
+          console.error(err);
+          toast(`Submit failed: ${err.message}`, 'error');
+        } finally {
+          el.btnSubmit.disabled = false;
+          el.btnSubmit.textContent = '▶ Submit Job';
+        }
+      }
+
+      el.btnSubmit.addEventListener('click', submitJob);
+      renderJobList();
+      setMonitorState('idle');
+    })();
+
+    // =========================================================================
+    // IMAGE STUDIO (Process API — synchronous edit / text-to-image)
+    // =========================================================================
+    (function initImageStudio() {
+      const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+      const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+      const el = {
+        tallyStrip: document.getElementById('img-tally-strip'),
+        statusWord: document.getElementById('img-status-word'),
+        outputImage: document.getElementById('img-output-image'),
+        placeholder: document.getElementById('img-placeholder'),
+        loadingOverlay: document.getElementById('img-loading-overlay'),
+        telStatus: document.getElementById('img-tel-status'),
+        telModel: document.getElementById('img-tel-model'),
+        telElapsed: document.getElementById('img-tel-elapsed'),
+        telOutput: document.getElementById('img-tel-output'),
+        modelPicker: document.getElementById('img-model-picker'),
+        sourceModule: document.getElementById('img-source-module'),
+        dropzone: document.getElementById('img-dropzone'),
+        fileInput: document.getElementById('img-file-input'),
+        filePreview: document.getElementById('img-file-preview'),
+        filePreviewImg: document.getElementById('img-file-preview-img'),
+        filePreviewName: document.getElementById('img-file-preview-name'),
+        filePreviewSize: document.getElementById('img-file-preview-size'),
+        fileClearBtn: document.getElementById('img-file-clear-btn'),
+        promptInput: document.getElementById('img-prompt-input'),
+        t2iOptions: document.getElementById('img-t2i-options'),
+        aspectSelect: document.getElementById('img-aspect-select'),
+        btnGenerate: document.getElementById('img-btn-generate'),
+        btnDownload: document.getElementById('img-btn-download'),
+      };
+
+      const MODEL_SPECS = {
+        'image.lucy-image-2': { needsData: true, promptPlaceholder: 'Describe the changes to make to the image…' },
+        'image.lucy-pro-t2i': { needsData: false, promptPlaceholder: 'Describe the image to generate…' },
+      };
+
+      const state = { selectedModel: 'image.lucy-image-2', lastResultBlob: null, lastResultModelLabel: '' };
+
+      function applyModelUI(modelId) {
+        const spec = MODEL_SPECS[modelId];
+        el.sourceModule.style.display = spec.needsData ? '' : 'none';
+        el.t2iOptions.style.display = spec.needsData ? 'none' : '';
+        el.promptInput.placeholder = spec.promptPlaceholder;
+      }
+
+      const picker = wireModelPicker(el.modelPicker, (modelId) => {
+        state.selectedModel = modelId;
+        applyModelUI(modelId);
+        fileDropzone.clear();
+      });
+      applyModelUI(state.selectedModel);
+
+      function validateSourceFile(file) {
+        if (!IMAGE_TYPES.includes(file.type)) { toast('Unsupported file type. Use JPG, PNG, or WEBP.', 'error'); return false; }
+        if (file.size > MAX_IMAGE_BYTES) { toast('Image exceeds the 5MB limit.', 'error'); return false; }
+        return true;
+      }
+
+      const fileDropzone = wireDropzone({
+        dropzoneEl: el.dropzone, inputEl: el.fileInput, previewEl: el.filePreview,
+        previewImgEl: el.filePreviewImg, nameEl: el.filePreviewName, sizeEl: el.filePreviewSize,
+        clearBtnEl: el.fileClearBtn, validate: validateSourceFile,
+      });
+
+      function setMonitorState(newState) {
+        el.tallyStrip.dataset.state = newState;
+        el.statusWord.dataset.state = newState;
+        const labels = { idle: 'IDLE', processing: 'GENERATING', completed: 'DONE', failed: 'FAILED' };
+        el.statusWord.textContent = labels[newState] || newState.toUpperCase();
+        el.telStatus.textContent = labels[newState] || newState;
+        el.loadingOverlay.classList.toggle('active', newState === 'processing');
+        el.placeholder.style.display = (newState === 'idle') ? 'flex' : 'none';
+      }
+
+      async function generateImage() {
+        const spec = MODEL_SPECS[state.selectedModel];
+        const prompt = el.promptInput.value.trim();
+        if (!prompt) { toast('Enter a prompt first.', 'warn'); return; }
+
+        const sourceFile = fileDropzone.getFile();
+        if (spec.needsData && !sourceFile) { toast('Upload a source image first.', 'warn'); return; }
+
+        const modelLabelEl = el.modelPicker.querySelector(`.model-card[data-model="${state.selectedModel}"] .name`);
+        const modelLabel = modelLabelEl ? modelLabelEl.textContent : state.selectedModel;
+
+        el.btnGenerate.disabled = true;
+        el.btnGenerate.textContent = 'Generating…';
+        el.btnDownload.disabled = true;
+        el.telModel.textContent = modelLabel;
+        setMonitorState('processing');
+
+        const startedAt = Date.now();
+        const elapsedHandle = setInterval(() => {
+          el.telElapsed.textContent = `${((Date.now() - startedAt) / 1000).toFixed(1)}s`;
+        }, 100);
+
+        try {
+          const formData = new FormData();
+          formData.append('model', state.selectedModel);
+          formData.append('prompt', prompt);
+          if (sourceFile) formData.append('data', sourceFile);
+          if (!spec.needsData) formData.append('aspectRatio', el.aspectSelect.value);
+
+          const res = await fetch('/api/image/process', { method: 'POST', body: formData });
+          if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.message || 'Image generation failed.');
+          }
+          const blob = await res.blob();
+          state.lastResultBlob = blob;
+          state.lastResultModelLabel = modelLabel;
+
+          el.outputImage.src = URL.createObjectURL(blob);
+          el.outputImage.style.display = '';
+          el.placeholder.style.display = 'none';
+          el.telOutput.textContent = `${formatBytes(blob.size)} ${blob.type.split('/')[1] || ''}`;
+          setMonitorState('completed');
+          el.btnDownload.disabled = false;
+          toast('Image generated.', 'success');
+        } catch (err) {
+          console.error(err);
+          toast(`Generation failed: ${err.message}`, 'error');
+          setMonitorState('failed');
+        } finally {
+          clearInterval(elapsedHandle);
+          el.btnGenerate.disabled = false;
+          el.btnGenerate.textContent = '▶ Generate';
+        }
+      }
+
+      function downloadResult() {
+        if (!state.lastResultBlob) return;
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(state.lastResultBlob);
+        a.download = `anonymoux-${Date.now()}.png`;
+        a.click();
+      }
+
+      el.btnGenerate.addEventListener('click', generateImage);
+      el.btnDownload.addEventListener('click', downloadResult);
+      setMonitorState('idle');
+    })();
+
+    // =========================================================================
+    // BOOT
+    // =========================================================================
+    checkHealth();
+  </script>
+
+</body>
+</html>
